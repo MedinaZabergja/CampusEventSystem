@@ -6,7 +6,26 @@ const router = express.Router();
 // CREATE FEEDBACK
 router.post('/', async (req, res) => {
   try {
-    const feedback = await Feedback.create(req.body);
+    const { userId, eventId, rating, comment } = req.body;
+
+    const existingFeedback = await Feedback.findOne({
+      userId,
+      eventId,
+    });
+
+    if (existingFeedback) {
+      return res.status(400).json({
+        message: 'You have already reviewed this event.',
+      });
+    }
+
+    const feedback = await Feedback.create({
+      userId,
+      eventId,
+      rating,
+      comment,
+    });
+
     res.status(201).json(feedback);
   } catch (error) {
     res.status(500).json({

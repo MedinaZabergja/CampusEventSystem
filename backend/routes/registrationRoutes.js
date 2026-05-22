@@ -1,5 +1,6 @@
 const express = require('express');
 const Registration = require('../models/Registration');
+const Event = require('../models/Event');
 
 const router = express.Router();
 
@@ -24,6 +25,25 @@ router.post('/', async (req, res) => {
       userId,
       eventId,
     });
+
+    const event = await Event.findById(eventId);
+
+  if (!event) {
+    return res.status(404).json({
+     message: 'Event not found.',
+    });
+  }
+
+  const registrationCount = await Registration.countDocuments({
+    eventId,
+    status: 'registered',
+  });
+
+  if (registrationCount >= event.capacity) {
+    return res.status(400).json({
+      message: 'This event is already full.',
+    });
+  }
 
     res.status(201).json(registration);
   } catch (error) {
@@ -91,3 +111,30 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+router.delete('/:userId/:eventId', async (req, res) => {
+  try {
+    const { userId, eventId } = req.params;
+
+    const deletedRegistration =
+      await Registration.findOneAndDelete({
+        userId,
+        eventId,
+      });
+
+    if (!deletedRegistration) {
+      return res.status(404).json({
+        message: 'Registration not found.',
+      });
+    }
+
+    res.json({
+      message:
+        'Successfully unregistered from event.',
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
